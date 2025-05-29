@@ -10,13 +10,12 @@ class EditorOpenAction(Action):
         self.target_payload = target_payload
 
     def perform(self):
-        path = self.target_payload.file_path
-
-        if self.target_payload.line_number:
-            path = f'+{self.target_payload.line_number} {path}'
+        command = self.emacs_command()
+        if os.environ.get('ZED_TERM') == "true":
+            command = self.zed_command()
 
         subprocess.Popen(
-            f'emacs {path}',
+            command,
             shell=True,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
@@ -24,3 +23,17 @@ class EditorOpenAction(Action):
             close_fds=True,
             preexec_fn=os.setpgrp
         )
+
+    def zed_command(self):
+        path = self.target_payload.file_path
+
+        if self.target_payload.line_number:
+            path = f'{path}:{self.target_payload.line_number} '
+        return f'zed --add {path}'
+
+    def emacs_command(self):
+        path = self.target_payload.file_path
+
+        if self.target_payload.line_number:
+            path = f'+{self.target_payload.line_number} {path}'
+        return f'emacs {path}'
